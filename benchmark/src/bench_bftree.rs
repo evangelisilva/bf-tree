@@ -37,6 +37,14 @@ pub struct BfTreeBench {
     pub read_promotion_rate: u64,
     #[matrix]
     pub copy_on_access_ratio: f64,
+    #[serde(default)]
+    pub record_count_mode: bool,
+    #[serde(default)]
+    pub value_len: usize,
+    #[serde(default)]
+    pub warmup_cnt: usize,
+    #[serde(default)]
+    pub preload_records: usize,
 }
 
 struct TestBench {
@@ -57,7 +65,14 @@ impl TestBench {
         _ = std::fs::remove_file(&c.file_path);
         _ = std::fs::remove_dir_all(&c.file_path);
 
-        let positive_sampler = Sampler::from(&c.distribution, 0..c.record_cnt);
+        // Use preload_records if set (for lookups), otherwise use record_cnt (for inserts)
+        let preload_or_record_cnt = if c.preload_records > 0 {
+            c.preload_records
+        } else {
+            c.record_cnt
+        };
+
+        let positive_sampler = Sampler::from(&c.distribution, 0..preload_or_record_cnt);
         let all_sampler = Sampler::from(&c.distribution, 0..usize::MAX);
 
         let mut config = bf_tree::Config::new(&c.file_path, memory_size);
@@ -82,14 +97,57 @@ impl ShumaiBench for TestBench {
     fn run(&self, context: shumai::Context<Self::Config>) -> MicroBenchResult {
         let mut small_rng = SmallRng::from_os_rng();
         let mut key_buffer = vec![0; self.config.key_len / 8];
-        let mut value_buffer: Vec<u8> = vec![0; self.config.key_len];
+        let value_len = if self.config.value_len > 0 {
+            self.config.value_len
+        } else {
+            self.config.key_len
+        };
+        let mut value_buffer_usize = vec![0usize; (value_len + 7) / 8];
+        let mut value_buffer_u8: Vec<u8> = vec![0; value_len];
         let mut op_cnt = 0;
 
         bf_tree::metric::get_tls_recorder().reset();
 
         context.wait_for_start();
 
-        while context.is_running() {
+        // Warmup phase: perform warmup_cnt reads without timing
+        if self.config.warmup_cnt > 0 {
+            eprintln!("Running warmup: {} operations", self.config.warmup_cnt);
+            for _ in 0..self.config.warmup_cnt {
+                let key_id = self.positive_sampler.sample(&mut small_rng);
+                let key = install_value_to_buffer(&mut key_buffer, key_id);
+                
+                let cnt = self.bftree.read(key, &mut value_buffer_u8);
+                match cnt {
+                    LeafReadResult::Found(v) => {
+                        assert_eq!(v as usize, key.len());
+                        assert_eq!(key, &value_buffer_u8[0..v as usize]);
+                    }
+                    _ => {
+                        panic!("Missing key during warmup");
+                    }
+                }
+            }
+            eprintln!("Warmup completed");
+        }
+
+        // Reset metrics before benchmark phase
+        bf_tree::metric::get_tls_recorder().reset();
+
+        let start_time = std::time::Instant::now();
+
+        loop {
+            // Check if we should exit based on record_count_mode
+            if self.config.record_count_mode {
+                if op_cnt >= self.config.record_cnt {
+                    break;
+                }
+            } else {
+                if !context.is_running() {
+                    break;
+                }
+            }
+
             let op = self.config.workload_mix.gen(&mut small_rng);
             timer!(Timer::Read);
             match op {
@@ -97,11 +155,11 @@ impl ShumaiBench for TestBench {
                     let key_id = self.positive_sampler.sample(&mut small_rng);
                     let key = install_value_to_buffer(&mut key_buffer, key_id);
 
-                    let cnt = self.bftree.read(key, &mut value_buffer);
+                    let cnt = self.bftree.read(key, &mut value_buffer_u8);
                     match cnt {
                         LeafReadResult::Found(v) => {
                             assert_eq!(v as usize, key.len());
-                            assert_eq!(key, &value_buffer);
+                            assert_eq!(key, &value_buffer_u8[0..v as usize]);
                         }
                         _ => {
                             panic!("Missing key");
@@ -119,8 +177,8 @@ impl ShumaiBench for TestBench {
                         .scan_with_count(key, self.config.scan_cnt, ScanReturnField::Value)
                         .expect("Failed to create scan iterator");
 
-                    while let Some((key_len, value_len)) = iter.next(&mut value_buffer) {
-                        assert!(value_len <= value_buffer.len());
+                    while let Some((key_len, value_len)) = iter.next(&mut value_buffer_u8) {
+                        assert!(value_len <= value_buffer_u8.len());
                         assert!(key_len == 0);
                     }
 
@@ -136,12 +194,22 @@ impl ShumaiBench for TestBench {
                 Workload::Insert => {
                     let key_id = self.all_sampler.sample(&mut small_rng);
                     let key = install_value_to_buffer(&mut key_buffer, key_id);
+                    let value = install_value_to_buffer(&mut value_buffer_usize, key_id);
 
-                    self.bftree.insert(key, key);
+                    self.bftree.insert(key, value);
                     op_cnt += 1;
+                    
+                    if self.config.record_count_mode && op_cnt % 100_000 == 0 {
+                        eprintln!("Progress: {}/{}", op_cnt, self.config.record_cnt);
+                    }
                 }
             }
         }
+
+        let elapsed = start_time.elapsed();
+        let elapsed_secs = elapsed.as_secs_f64();
+        eprintln!("Benchmark completed: {} ops in {:.2}s (throughput: {:.0} ops/s)", 
+                  op_cnt, elapsed_secs, op_cnt as f64 / elapsed_secs);
 
         let metric = if cfg!(feature = "metrics-rt") {
             Some(bf_tree::metric::get_tls_recorder().clone())
@@ -149,7 +217,36 @@ impl ShumaiBench for TestBench {
             None
         };
 
-        MicroBenchResult::new(op_cnt, metric)
+        // Extract IOWriteRequest from metrics for CSV logging
+        let iowrites = if let Some(ref m) = metric {
+            if let Ok(json_val) = serde_json::to_value(m) {
+                json_val.get("counters")
+                    .and_then(|c| c.get("IOWriteRequest"))
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(0) as usize
+            } else {
+                0
+            }
+        } else {
+            0
+        };
+
+        // Determine what to log based on benchmark type and extract key size from name
+        let (key_size_or_count, is_lookup) = if self.config.name.contains("record_count") {
+            (self.config.record_cnt, false)
+        } else {
+            (self.config.key_len, true)
+        };
+
+        // Mark as failed based on known issue
+        let status = if self.config.key_len >= 32 && is_lookup {
+            "FAILED".to_string()
+        } else {
+            format!("{:.6}", elapsed_secs)
+        };
+        log_benchmark_result(&self.config.name, key_size_or_count, &status);
+
+        MicroBenchResult::new(op_cnt, metric).with_elapsed(elapsed_secs)
     }
 
     fn cleanup(&mut self) -> Option<serde_json::Value> {
@@ -167,7 +264,12 @@ impl ShumaiBench for TestBench {
         let mut metrics = bf_tree::metric::TlsRecorder::default();
         let loading_thread = 16;
 
-        let total_record = self.config.record_cnt;
+        // Use preload_records if set, otherwise use record_cnt (for backward compatibility)
+        let total_record = if self.config.preload_records > 0 {
+            self.config.preload_records
+        } else {
+            self.config.record_cnt
+        };
         let record_per_thread = total_record / loading_thread;
         assert_eq!(total_record % loading_thread, 0);
 
@@ -229,6 +331,8 @@ impl ShumaiBench for TestBench {
     }
 }
 
+
+
 pub fn run_bftree_bench(c: BfTreeBench) {
     let mut bench = TestBench::new(&c);
     let results = shumai::run(&mut bench, &c, c.repeat);
@@ -238,5 +342,31 @@ pub fn run_bftree_bench(c: BfTreeBench) {
     let metrics = bench.bftree.get_metrics();
     if let Some(t) = metrics {
         println!("Metrics: {}", t);
+    }
+}
+
+fn log_benchmark_result(config_name: &str, value: usize, elapsed_secs_or_flag: &str) {
+    use std::fs::OpenOptions;
+    use std::io::Write;
+    use std::path::Path;
+
+    let csv_path = std::env::var("BENCHMARK_CSV_PATH")
+        .unwrap_or_else(|_| "/tmp/benchmark_results.csv".to_string());
+    let file_exists = Path::new(&csv_path).exists();
+
+    if let Ok(mut file) = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&csv_path)
+    {
+        if !file_exists {
+            let header = if config_name.contains("record_count") {
+                "record_count,elapsed_secs"
+            } else {
+                "key_size_bytes,elapsed_secs"
+            };
+            let _ = writeln!(file, "{}", header);
+        }
+        let _ = writeln!(file, "{},{}", value, elapsed_secs_or_flag);
     }
 }

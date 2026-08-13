@@ -121,6 +121,8 @@ use bf_tree::metric::TlsRecorder;
 pub struct MicroBenchResult {
     throughput: usize,
     metrics: Option<TlsRecorder>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub elapsed_sec: Option<f64>,
 }
 
 impl MicroBenchResult {
@@ -128,7 +130,13 @@ impl MicroBenchResult {
         Self {
             throughput,
             metrics,
+            elapsed_sec: None,
         }
+    }
+
+    pub fn with_elapsed(mut self, elapsed_sec: f64) -> Self {
+        self.elapsed_sec = Some(elapsed_sec);
+        self
     }
 }
 
@@ -150,6 +158,7 @@ impl std::ops::Add for MicroBenchResult {
         Self {
             throughput: self.throughput + other.throughput,
             metrics: new_metric,
+            elapsed_sec: self.elapsed_sec.or(other.elapsed_sec),
         }
     }
 }
@@ -166,6 +175,9 @@ impl std::ops::AddAssign for MicroBenchResult {
             }
             _ => {}
         }
+        if self.elapsed_sec.is_none() {
+            self.elapsed_sec = other.elapsed_sec;
+        }
     }
 }
 
@@ -180,6 +192,7 @@ impl shumai::BenchResult for MicroBenchResult {
         Self {
             throughput: throughput as usize,
             metrics: self.metrics,
+            elapsed_sec: self.elapsed_sec,
         }
     }
 }

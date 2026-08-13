@@ -1,112 +1,484 @@
-[[BfTreeBench]]
-name = "inmemory"
-threads = [32, 32]
-time = 10
-repeat = 5
-record_cnt = 100_000_000
-distribution = ["Uniform"]
-workload_mix = [
-	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
-]
-memory_size_mb = [16384]
-file_path = ":memory:"
-key_len = 16
-scan_cnt = 32
-storage = ["Memory"]
-read_promotion_rate = [100]
-copy_on_access_ratio = [0.1]
+# ===== INSERT KEY SIZE SWEEP =====
+# Configuration: 5 key sizes (8, 16, 32, 64, 128 bytes), 8-byte values, 32MB cache
+# Benchmark: Insert 1M records with uniform distribution
 
 [[BfTreeBench]]
-name = "storage"
-threads = [30, 30, 30, 30, 31]
-time = 30
-repeat = 5
-record_cnt = 100_000_000
-distribution = [{ Zipf = 0.9 }]
-workload_mix = [
-	{ read = 0, negative_read = 0, update = 0, scan = 100, insert = 0 },
-	{ read = 0, negative_read = 0, update = 100, scan = 0, insert = 0 },
-	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
-]
-memory_size_mb = [1024]
-file_path = "/mnt/ssd/micro"
-key_len = 16
-scan_cnt = 32
-storage = ["StdDirect", "IoUringPolling", "IoUringBlocking"]
-read_promotion_rate = [30]
-copy_on_access_ratio = [0.1]
-
-[[BfTreeBench]]
-name = "read_only"
-threads = [30, 30, 30, 30, 31]
-time = 30
-repeat = 5
-record_cnt = 100_000_000
-distribution = [{ Zipf = 0.9 }]
-workload_mix = [
-	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
-]
-memory_size_mb = [1024]
-file_path = "/mnt/ssd/micro"
-key_len = 16
-scan_cnt = 32
-storage = ["IoUringBlocking"]
-read_promotion_rate = [30]
-copy_on_access_ratio = [0.1]
-
-
-[[BfTreeBench]]
-name = "promotion_rate"
-threads = [30, 30, 30, 30, 31]
-time = 30
-repeat = 5
-record_cnt = 100_000_000
-distribution = [{ Zipf = 0.9 }]
-workload_mix = [
-	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
-]
-memory_size_mb = [1024]
-file_path = "/mnt/ssd/micro"
-key_len = 16
-scan_cnt = 32
-storage = ["IoUringBlocking"]
-read_promotion_rate = [1, 5, 10, 20, 40, 60, 80, 100]
-copy_on_access_ratio = [0.1]
-
-
-[[BfTreeBench]]
-name = "copy_on_access_ratio"
-threads = [30, 30, 30, 30, 31]
-time = 30
-repeat = 5
-record_cnt = 100_000_000
-distribution = [{ Zipf = 0.9 }]
-workload_mix = [
-	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
-]
-memory_size_mb = [1024]
-file_path = "/mnt/ssd/micro"
-key_len = 16
-scan_cnt = 32
-storage = ["IoUringBlocking"]
-read_promotion_rate = [30]
-copy_on_access_ratio = [0.0, 0.05, 0.1, 0.15, 0.2, 0.4, 0.6, 0.8, 1.0]
-
-
-[[BfTreeBench]]
-name = "insert_only"
-threads = [30]
-time = 10
-repeat = 3
+name = "insert_key_size_sweep_8"
+threads = [1]
+time = 0
+repeat = 1
 record_cnt = 1_000_000
-distribution = [{ Zipf = 0.9 }]
+distribution = [{ Uniform = {} }]
 workload_mix = [
 	{ read = 0, negative_read = 0, update = 0, scan = 0, insert = 100 },
 ]
-memory_size_mb = [1024]
-file_path = "/mnt/ssd/micro"
-key_len = 16
-scan_cnt = 32
-storage = ["StdDirect", "IoUringPolling", "IoUringBlocking"]
-read_promotion_rate = [30]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
 copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 0
+preload_records = 0
+
+[[BfTreeBench]]
+name = "insert_key_size_sweep_16"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 1_000_000
+distribution = [{ Uniform = {} }]
+workload_mix = [
+	{ read = 0, negative_read = 0, update = 0, scan = 0, insert = 100 },
+]
+key_len = 16
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 0
+preload_records = 0
+
+[[BfTreeBench]]
+name = "insert_key_size_sweep_32"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 1_000_000
+distribution = [{ Uniform = {} }]
+workload_mix = [
+	{ read = 0, negative_read = 0, update = 0, scan = 0, insert = 100 },
+]
+key_len = 32
+scan_cnt = 1
+memory_size_mb = [128]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 0
+preload_records = 0
+
+[[BfTreeBench]]
+name = "insert_key_size_sweep_64"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 1_000_000
+distribution = [{ Uniform = {} }]
+workload_mix = [
+	{ read = 0, negative_read = 0, update = 0, scan = 0, insert = 100 },
+]
+key_len = 64
+scan_cnt = 1
+memory_size_mb = [256]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 0
+preload_records = 0
+
+[[BfTreeBench]]
+name = "insert_key_size_sweep_128"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 1_000_000
+distribution = [{ Uniform = {} }]
+workload_mix = [
+	{ read = 0, negative_read = 0, update = 0, scan = 0, insert = 100 },
+]
+key_len = 128
+scan_cnt = 1
+memory_size_mb = [512]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 0
+preload_records = 0
+
+# ===== INSERT RECORD COUNT SWEEP =====
+# Configuration: Fixed 8-byte keys, varying record counts (1M to 32M)
+# Benchmark: Insert with uniform distribution, 8-byte values
+
+[[BfTreeBench]]
+name = "insert_record_count_1m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 1_000_000
+distribution = [{ Uniform = {} }]
+workload_mix = [
+	{ read = 0, negative_read = 0, update = 0, scan = 0, insert = 100 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 0
+preload_records = 0
+
+[[BfTreeBench]]
+name = "insert_record_count_2m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 2_000_000
+distribution = [{ Uniform = {} }]
+workload_mix = [
+	{ read = 0, negative_read = 0, update = 0, scan = 0, insert = 100 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 0
+preload_records = 0
+
+[[BfTreeBench]]
+name = "insert_record_count_4m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 4_000_000
+distribution = [{ Uniform = {} }]
+workload_mix = [
+	{ read = 0, negative_read = 0, update = 0, scan = 0, insert = 100 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 0
+preload_records = 0
+
+[[BfTreeBench]]
+name = "insert_record_count_8m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 8_000_000
+distribution = [{ Uniform = {} }]
+workload_mix = [
+	{ read = 0, negative_read = 0, update = 0, scan = 0, insert = 100 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 0
+preload_records = 0
+
+[[BfTreeBench]]
+name = "insert_record_count_16m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 16_000_000
+distribution = [{ Uniform = {} }]
+workload_mix = [
+	{ read = 0, negative_read = 0, update = 0, scan = 0, insert = 100 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 0
+preload_records = 0
+
+[[BfTreeBench]]
+name = "insert_record_count_32m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 32_000_000
+distribution = [{ Uniform = {} }]
+workload_mix = [
+	{ read = 0, negative_read = 0, update = 0, scan = 0, insert = 100 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 0
+preload_records = 0
+
+# ===== LOOKUP BENCHMARKS =====
+# Configuration: 5 key sizes (8, 16, 32, 64, 128 bytes), 128-byte values, 32MB cache
+# Benchmark: Lookup 10K operations with Zipfian(1.0) - skewed distribution
+# Warmup: 10K operations before each benchmark
+
+# ===== 8-byte keys - Lookup Benchmark =====
+[[BfTreeBench]]
+name = "lookup_8byte"
+threads = [1]
+time = 999999
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 1.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 128
+warmup_cnt = 10_000
+preload_records = 1_000_000
+
+# ===== 16-byte keys - Lookup Benchmark =====
+[[BfTreeBench]]
+name = "lookup_16byte"
+threads = [1]
+time = 999999
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 1.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 16
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 128
+warmup_cnt = 10_000
+preload_records = 1_000_000
+
+# ===== 32-byte keys - Lookup Benchmark =====
+[[BfTreeBench]]
+name = "lookup_32byte"
+threads = [1]
+time = 999999
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 1.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 32
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 128
+warmup_cnt = 10_000
+preload_records = 1_000_000
+
+# ===== 64-byte keys - Lookup Benchmark =====
+[[BfTreeBench]]
+name = "lookup_64byte"
+threads = [1]
+time = 999999
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 1.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 64
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 128
+warmup_cnt = 10_000
+preload_records = 1_000_000
+
+# ===== 128-byte keys - Lookup Benchmark =====
+[[BfTreeBench]]
+name = "lookup_128byte"
+threads = [1]
+time = 999999
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 1.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 128
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 128
+warmup_cnt = 10_000
+preload_records = 1_000_000
+
+# ===== LOOKUP ZIPF UNIFORM (0.0) =====
+# Configuration: 5 key sizes (8, 16, 32, 64, 128 bytes), 128-byte values, 32MB cache
+# Benchmark: Lookup with Zipfian(0.0) - uniform distribution
+# Warmup: 10K operations before each benchmark
+
+[[BfTreeBench]]
+name = "lookup_zipf_uniform_8byte"
+threads = [1]
+time = 999999
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 128
+warmup_cnt = 10_000
+preload_records = 1_000_000
+
+[[BfTreeBench]]
+name = "lookup_zipf_uniform_16byte"
+threads = [1]
+time = 999999
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 16
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 128
+warmup_cnt = 10_000
+preload_records = 1_000_000
+
+[[BfTreeBench]]
+name = "lookup_zipf_uniform_32byte"
+threads = [1]
+time = 999999
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 32
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 128
+warmup_cnt = 10_000
+preload_records = 1_000_000
+
+[[BfTreeBench]]
+name = "lookup_zipf_uniform_64byte"
+threads = [1]
+time = 999999
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 64
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 128
+warmup_cnt = 10_000
+preload_records = 1_000_000
+
+[[BfTreeBench]]
+name = "lookup_zipf_uniform_128byte"
+threads = [1]
+time = 999999
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 128
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 128
+warmup_cnt = 10_000
+preload_records = 1_000_000

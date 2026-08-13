@@ -117,7 +117,7 @@ dependencies = [
 
 [[package]]
 name = "bf-tree"
-version = "0.5.3"
+version = "0.5.6"
 dependencies = [
  "auto_ops",
  "cfg-if",
