@@ -2,7 +2,7 @@
 
 Run from the `benchmark/` directory.
 
-## Insert Key Size Benchmark
+## Insert Key Size Benchmark 
 ```bash
 ./run_insert_key_size_sweep.sh
 ```
@@ -19,8 +19,6 @@ Output: `/tmp/benchmark_insert_record_count_sweep.csv`
 ./run_lookup_zipf_uniform.sh
 ```
 Output: `/tmp/benchmark_lookup_zipf_uniform.csv`
-
-⚠️ Still testing, not ready to use.
 
 ## Lookup Zipf Skewed Benchmark
 ```bash
