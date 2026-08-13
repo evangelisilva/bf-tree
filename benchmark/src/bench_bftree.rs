@@ -124,7 +124,14 @@ impl ShumaiBench for TestBench {
                         assert_eq!(key, &value_buffer_u8[0..v as usize]);
                     }
                     _ => {
-                        panic!("Missing key during warmup");
+                        eprintln!("Missing key during warmup, marking benchmark as FAILED");
+                        let key_size_or_count = if self.config.name.contains("record_count") {
+                            self.config.record_cnt
+                        } else {
+                            self.config.key_len
+                        };
+                        log_benchmark_result(&self.config.name, key_size_or_count, "FAILED");
+                        std::process::exit(0);
                     }
                 }
             }
@@ -162,7 +169,14 @@ impl ShumaiBench for TestBench {
                             assert_eq!(key, &value_buffer_u8[0..v as usize]);
                         }
                         _ => {
-                            panic!("Missing key");
+                            eprintln!("Missing key during benchmark, marking benchmark as FAILED");
+                            let key_size_or_count = if self.config.name.contains("record_count") {
+                                self.config.record_cnt
+                            } else {
+                                self.config.key_len
+                            };
+                            log_benchmark_result(&self.config.name, key_size_or_count, "FAILED");
+                            std::process::exit(0);
                         }
                     }
                     op_cnt += 1;
@@ -232,15 +246,20 @@ impl ShumaiBench for TestBench {
         };
 
         // Determine what to log based on benchmark type and extract key size from name
-        let (key_size_or_count, is_lookup) = if self.config.name.contains("record_count") {
-            (self.config.record_cnt, false)
+        let is_lookup = self.config.name.contains("lookup");
+        let key_size_or_count = if self.config.name.contains("record_count") {
+            self.config.record_cnt
         } else {
-            (self.config.key_len, true)
+            self.config.key_len
         };
 
-        // Mark as failed based on known issue
+        // Mark as failed based on known issue; lookup benchmarks report average
+        // per-op latency in milliseconds instead of total elapsed time.
         let status = if self.config.key_len >= 32 && is_lookup {
             "FAILED".to_string()
+        } else if is_lookup {
+            let avg_latency_ms = (elapsed_secs * 1000.0) / op_cnt as f64;
+            format!("{:.6}", avg_latency_ms)
         } else {
             format!("{:.6}", elapsed_secs)
         };
@@ -362,6 +381,8 @@ fn log_benchmark_result(config_name: &str, value: usize, elapsed_secs_or_flag: &
         if !file_exists {
             let header = if config_name.contains("record_count") {
                 "record_count,elapsed_secs"
+            } else if config_name.contains("lookup") {
+                "key_size_bytes,avg_latency_ms"
             } else {
                 "key_size_bytes,elapsed_secs"
             };

@@ -257,7 +257,7 @@ preload_records = 0
 [[BfTreeBench]]
 name = "lookup_8byte"
 threads = [1]
-time = 999999
+time = 0
 repeat = 1
 record_cnt = 10_000
 distribution = [{ Zipf = 1.0 }]
@@ -280,7 +280,7 @@ preload_records = 1_000_000
 [[BfTreeBench]]
 name = "lookup_16byte"
 threads = [1]
-time = 999999
+time = 0
 repeat = 1
 record_cnt = 10_000
 distribution = [{ Zipf = 1.0 }]
@@ -303,7 +303,7 @@ preload_records = 1_000_000
 [[BfTreeBench]]
 name = "lookup_32byte"
 threads = [1]
-time = 999999
+time = 0
 repeat = 1
 record_cnt = 10_000
 distribution = [{ Zipf = 1.0 }]
@@ -326,7 +326,7 @@ preload_records = 1_000_000
 [[BfTreeBench]]
 name = "lookup_64byte"
 threads = [1]
-time = 999999
+time = 0
 repeat = 1
 record_cnt = 10_000
 distribution = [{ Zipf = 1.0 }]
@@ -349,7 +349,7 @@ preload_records = 1_000_000
 [[BfTreeBench]]
 name = "lookup_128byte"
 threads = [1]
-time = 999999
+time = 0
 repeat = 1
 record_cnt = 10_000
 distribution = [{ Zipf = 1.0 }]
@@ -376,7 +376,7 @@ preload_records = 1_000_000
 [[BfTreeBench]]
 name = "lookup_zipf_uniform_8byte"
 threads = [1]
-time = 999999
+time = 0
 repeat = 1
 record_cnt = 10_000
 distribution = [{ Zipf = 0.0 }]
@@ -398,7 +398,7 @@ preload_records = 1_000_000
 [[BfTreeBench]]
 name = "lookup_zipf_uniform_16byte"
 threads = [1]
-time = 999999
+time = 0
 repeat = 1
 record_cnt = 10_000
 distribution = [{ Zipf = 0.0 }]
@@ -420,7 +420,7 @@ preload_records = 1_000_000
 [[BfTreeBench]]
 name = "lookup_zipf_uniform_32byte"
 threads = [1]
-time = 999999
+time = 0
 repeat = 1
 record_cnt = 10_000
 distribution = [{ Zipf = 0.0 }]
@@ -442,7 +442,7 @@ preload_records = 1_000_000
 [[BfTreeBench]]
 name = "lookup_zipf_uniform_64byte"
 threads = [1]
-time = 999999
+time = 0
 repeat = 1
 record_cnt = 10_000
 distribution = [{ Zipf = 0.0 }]
@@ -464,7 +464,7 @@ preload_records = 1_000_000
 [[BfTreeBench]]
 name = "lookup_zipf_uniform_128byte"
 threads = [1]
-time = 999999
+time = 0
 repeat = 1
 record_cnt = 10_000
 distribution = [{ Zipf = 0.0 }]
