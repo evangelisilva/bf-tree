@@ -25,5 +25,3 @@ Output: `/tmp/benchmark_lookup_zipf_uniform.csv`
 ./run_lookup_zipf_skewed.sh
 ```
 Output: `/tmp/benchmark_lookup_zipf_skewed.csv`
-
-⚠️ Still testing, not ready to use.
