@@ -264,12 +264,15 @@ impl ShumaiBench for TestBench {
             format!("{:.6}", elapsed_secs)
         };
         let io_counts = if is_disk {
+            let total_page_reads = base_page_reads + full_page_reads + mini_page_reads;
+            let avg_page_reads = total_page_reads as f64 / op_cnt as f64;
             Some(PageIoCounts {
                 io_reads,
                 io_writes,
                 base_page_reads,
                 full_page_reads,
                 mini_page_reads,
+                avg_page_reads,
             })
         } else {
             None
@@ -398,7 +401,7 @@ fn log_benchmark_result(
             let is_lookup = config_name.contains("lookup");
             let is_record_count = config_name.contains("record_count");
             let header = if io_counts.is_some() {
-                "record_count,avg_latency_ms,io_read_cnt,io_write_cnt,base_page_read_cnt,full_page_read_cnt,mini_page_read_cnt"
+                "record_count,avg_latency_ms,avg_page_reads,io_read_cnt,io_write_cnt,base_page_read_cnt,full_page_read_cnt,mini_page_read_cnt"
             } else if is_lookup && is_record_count {
                 "record_count,avg_latency_ms"
             } else if is_lookup {
@@ -414,9 +417,10 @@ fn log_benchmark_result(
             Some(c) => {
                 let _ = writeln!(
                     file,
-                    "{},{},{},{},{},{},{}",
+                    "{},{},{:.4},{},{},{},{},{}",
                     value,
                     elapsed_secs_or_flag,
+                    c.avg_page_reads,
                     c.io_reads,
                     c.io_writes,
                     c.base_page_reads,
@@ -438,6 +442,7 @@ struct PageIoCounts {
     base_page_reads: usize,
     full_page_reads: usize,
     mini_page_reads: usize,
+    avg_page_reads: f64,
 }
 
 // Determine the x-axis value to log for a given benchmark config: lookup
