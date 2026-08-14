@@ -1,25 +1,28 @@
 #!/bin/bash
-# Lookup Record Count Sweep Benchmark
+# Lookup Record Count Sweep Benchmark (StdDirect / O_DIRECT backend)
 # Measures lookup performance scaling with preloaded record count
 # Fixed 8-byte keys, 8-byte values, varying preloaded records: 1M, 2M, 4M, 8M, 16M, 32M
 # Each config runs 10,000 lookups (uniform distribution) after preload + warmup
+# Uses the StdDirect (O_DIRECT) storage backend, bypassing the OS page cache,
+# so results reflect true disk I/O rather than in-memory access.
 
 cd "$(dirname "$0")" || exit 1
 
 CSV_FILE="/tmp/benchmark_lookup_record_count_sweep.csv"
 
 echo "=========================================="
-echo "LOOKUP RECORD COUNT SWEEP BENCHMARK"
+echo "LOOKUP RECORD COUNT SWEEP BENCHMARK (StdDirect)"
 echo "=========================================="
 echo "Testing: 1M, 2M, 4M, 8M, 16M, 32M preloaded records"
 echo "Key Size: 8 bytes"
 echo "Values: 8 bytes"
 echo "Lookups: 10,000 (uniform distribution)"
-echo "Cache: 32MB in-memory"
+echo "Cache: 32MB, Backend: StdDirect (O_DIRECT)"
 echo ""
 
 rm -f "$CSV_FILE"
-cargo build --release 2>&1 | grep -E "Compiling|Finished"
+rm -rf /tmp/bftree_disk_bench
+cargo build --release --features metrics-rt 2>&1 | grep -E "Compiling|Finished"
 
 echo ""
 echo "Starting benchmarks..."
@@ -27,7 +30,7 @@ echo ""
 
 for record_count in 1m 2m 4m 8m 16m 32m; do
   echo "=== $record_count preloaded records benchmark ==="
-  env BENCHMARK_CSV_PATH="$CSV_FILE" SHUMAI_FILTER="lookup_record_count_${record_count}" timeout 7200 ./target/release/bftree 2>&1 | grep -E "Benchmark completed|Throughput:"
+  env BENCHMARK_CSV_PATH="$CSV_FILE" SHUMAI_FILTER="lookup_disk_direct_record_count_${record_count}" timeout 7200 ./target/release/bftree 2>&1 | grep -E "Benchmark completed|Throughput:"
   echo ""
 done
 
