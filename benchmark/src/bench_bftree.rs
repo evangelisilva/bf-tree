@@ -125,12 +125,7 @@ impl ShumaiBench for TestBench {
                     }
                     _ => {
                         eprintln!("Missing key during warmup, marking benchmark as FAILED");
-                        let key_size_or_count = if self.config.name.contains("record_count") {
-                            self.config.record_cnt
-                        } else {
-                            self.config.key_len
-                        };
-                        log_benchmark_result(&self.config.name, key_size_or_count, "FAILED");
+                        log_benchmark_result(&self.config.name, x_axis_value(&self.config), "FAILED", None);
                         std::process::exit(0);
                     }
                 }
@@ -170,12 +165,7 @@ impl ShumaiBench for TestBench {
                         }
                         _ => {
                             eprintln!("Missing key during benchmark, marking benchmark as FAILED");
-                            let key_size_or_count = if self.config.name.contains("record_count") {
-                                self.config.record_cnt
-                            } else {
-                                self.config.key_len
-                            };
-                            log_benchmark_result(&self.config.name, key_size_or_count, "FAILED");
+                            log_benchmark_result(&self.config.name, x_axis_value(&self.config), "FAILED", None);
                             std::process::exit(0);
                         }
                     }
@@ -231,27 +221,37 @@ impl ShumaiBench for TestBench {
             None
         };
 
-        // Extract IOWriteRequest from metrics for CSV logging
-        let iowrites = if let Some(ref m) = metric {
-            if let Ok(json_val) = serde_json::to_value(m) {
-                json_val.get("counters")
-                    .and_then(|c| c.get("IOWriteRequest"))
-                    .and_then(|v| v.as_u64())
-                    .unwrap_or(0) as usize
+        // Extract IOReadRequest/IOWriteRequest and page-read counters from metrics
+        // for CSV logging (only meaningful for disk-backed storage; Memory backend
+        // never counts IO, but page reads are tracked regardless of backend)
+        let (io_reads, io_writes, base_page_reads, full_page_reads, mini_page_reads) =
+            if let Some(ref m) = metric {
+                if let Ok(json_val) = serde_json::to_value(m) {
+                    let counters = json_val.get("counters");
+                    let get_counter = |name: &str| {
+                        counters
+                            .and_then(|c| c.get(name))
+                            .and_then(|v| v.as_u64())
+                            .unwrap_or(0) as usize
+                    };
+                    (
+                        get_counter("IOReadRequest"),
+                        get_counter("IOWriteRequest"),
+                        get_counter("BasePageRead"),
+                        get_counter("FullPageRead"),
+                        get_counter("MiniPageRead"),
+                    )
+                } else {
+                    (0, 0, 0, 0, 0)
+                }
             } else {
-                0
-            }
-        } else {
-            0
-        };
+                (0, 0, 0, 0, 0)
+            };
 
         // Determine what to log based on benchmark type and extract key size from name
         let is_lookup = self.config.name.contains("lookup");
-        let key_size_or_count = if self.config.name.contains("record_count") {
-            self.config.record_cnt
-        } else {
-            self.config.key_len
-        };
+        let is_disk = self.config.name.contains("disk");
+        let key_size_or_count = x_axis_value(&self.config);
 
         // Mark as failed based on known issue; lookup benchmarks report average
         // per-op latency in milliseconds instead of total elapsed time.
@@ -263,7 +263,18 @@ impl ShumaiBench for TestBench {
         } else {
             format!("{:.6}", elapsed_secs)
         };
-        log_benchmark_result(&self.config.name, key_size_or_count, &status);
+        let io_counts = if is_disk {
+            Some(PageIoCounts {
+                io_reads,
+                io_writes,
+                base_page_reads,
+                full_page_reads,
+                mini_page_reads,
+            })
+        } else {
+            None
+        };
+        log_benchmark_result(&self.config.name, key_size_or_count, &status, io_counts);
 
         MicroBenchResult::new(op_cnt, metric).with_elapsed(elapsed_secs)
     }
@@ -364,7 +375,12 @@ pub fn run_bftree_bench(c: BfTreeBench) {
     }
 }
 
-fn log_benchmark_result(config_name: &str, value: usize, elapsed_secs_or_flag: &str) {
+fn log_benchmark_result(
+    config_name: &str,
+    value: usize,
+    elapsed_secs_or_flag: &str,
+    io_counts: Option<PageIoCounts>,
+) {
     use std::fs::OpenOptions;
     use std::io::Write;
     use std::path::Path;
@@ -379,15 +395,62 @@ fn log_benchmark_result(config_name: &str, value: usize, elapsed_secs_or_flag: &
         .open(&csv_path)
     {
         if !file_exists {
-            let header = if config_name.contains("record_count") {
-                "record_count,elapsed_secs"
-            } else if config_name.contains("lookup") {
+            let is_lookup = config_name.contains("lookup");
+            let is_record_count = config_name.contains("record_count");
+            let header = if io_counts.is_some() {
+                "record_count,avg_latency_ms,io_read_cnt,io_write_cnt,base_page_read_cnt,full_page_read_cnt,mini_page_read_cnt"
+            } else if is_lookup && is_record_count {
+                "record_count,avg_latency_ms"
+            } else if is_lookup {
                 "key_size_bytes,avg_latency_ms"
+            } else if is_record_count {
+                "record_count,elapsed_secs"
             } else {
                 "key_size_bytes,elapsed_secs"
             };
             let _ = writeln!(file, "{}", header);
         }
-        let _ = writeln!(file, "{},{}", value, elapsed_secs_or_flag);
+        match io_counts {
+            Some(c) => {
+                let _ = writeln!(
+                    file,
+                    "{},{},{},{},{},{},{}",
+                    value,
+                    elapsed_secs_or_flag,
+                    c.io_reads,
+                    c.io_writes,
+                    c.base_page_reads,
+                    c.full_page_reads,
+                    c.mini_page_reads
+                );
+            }
+            None => {
+                let _ = writeln!(file, "{},{}", value, elapsed_secs_or_flag);
+            }
+        }
+    }
+}
+
+// Disk I/O and page-read counters logged for disk-backed lookup benchmarks.
+struct PageIoCounts {
+    io_reads: usize,
+    io_writes: usize,
+    base_page_reads: usize,
+    full_page_reads: usize,
+    mini_page_reads: usize,
+}
+
+// Determine the x-axis value to log for a given benchmark config: lookup
+// record-count sweeps vary preload_records, insert record-count sweeps vary
+// record_cnt, and key-size sweeps (insert or lookup) vary key_len.
+fn x_axis_value(config: &BfTreeBench) -> usize {
+    let is_lookup = config.name.contains("lookup");
+    let is_record_count = config.name.contains("record_count");
+    if is_lookup && is_record_count {
+        config.preload_records
+    } else if is_record_count {
+        config.record_cnt
+    } else {
+        config.key_len
     }
 }

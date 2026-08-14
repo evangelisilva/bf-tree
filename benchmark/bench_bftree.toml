@@ -482,3 +482,413 @@ record_count_mode = true
 value_len = 128
 warmup_cnt = 10_000
 preload_records = 1_000_000
+
+# ===== LOOKUP RECORD COUNT SWEEP =====
+# Configuration: Fixed 8-byte keys, 8-byte values, varying preloaded record counts (1M to 32M)
+# Benchmark: Lookup 10K operations with uniform distribution after preload
+
+[[BfTreeBench]]
+name = "lookup_record_count_1m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 1_000_000
+
+[[BfTreeBench]]
+name = "lookup_record_count_2m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 2_000_000
+
+[[BfTreeBench]]
+name = "lookup_record_count_4m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 4_000_000
+
+[[BfTreeBench]]
+name = "lookup_record_count_8m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 8_000_000
+
+[[BfTreeBench]]
+name = "lookup_record_count_16m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 16_000_000
+
+[[BfTreeBench]]
+name = "lookup_record_count_32m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = ":memory:"
+storage = ["Memory"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 32_000_000
+
+# ===== LOOKUP DISK RECORD COUNT SWEEP =====
+# Configuration: Fixed 8-byte keys, 8-byte values, disk-backed storage (Std VFS)
+# 32MB in-memory cache, varying preloaded record counts (1M to 32M) so the
+# dataset exceeds the cache and lookups must hit disk (IOReadRequest > 0)
+# Benchmark: Lookup 10K operations with uniform distribution after preload
+
+[[BfTreeBench]]
+name = "lookup_disk_record_count_1m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = "/tmp/bftree_disk_bench/lookup_1m/data"
+storage = ["Std"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 1_000_000
+
+[[BfTreeBench]]
+name = "lookup_disk_record_count_2m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = "/tmp/bftree_disk_bench/lookup_2m/data"
+storage = ["Std"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 2_000_000
+
+[[BfTreeBench]]
+name = "lookup_disk_record_count_4m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = "/tmp/bftree_disk_bench/lookup_4m/data"
+storage = ["Std"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 4_000_000
+
+[[BfTreeBench]]
+name = "lookup_disk_record_count_8m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = "/tmp/bftree_disk_bench/lookup_8m/data"
+storage = ["Std"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 8_000_000
+
+[[BfTreeBench]]
+name = "lookup_disk_record_count_16m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = "/tmp/bftree_disk_bench/lookup_16m/data"
+storage = ["Std"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 16_000_000
+
+[[BfTreeBench]]
+name = "lookup_disk_record_count_32m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = "/tmp/bftree_disk_bench/lookup_32m/data"
+storage = ["Std"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 32_000_000
+
+# ===== LOOKUP DISK DIRECT-IO RECORD COUNT SWEEP =====
+# Same as above but uses StdDirect (O_DIRECT) storage backend, bypassing the
+# OS page cache so IOReadRequest reflects true device-level reads (Linux only)
+
+[[BfTreeBench]]
+name = "lookup_disk_direct_record_count_1m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = "/tmp/bftree_disk_bench/lookup_direct_1m/data"
+storage = ["StdDirect"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 1_000_000
+
+[[BfTreeBench]]
+name = "lookup_disk_direct_record_count_2m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = "/tmp/bftree_disk_bench/lookup_direct_2m/data"
+storage = ["StdDirect"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 2_000_000
+
+[[BfTreeBench]]
+name = "lookup_disk_direct_record_count_4m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = "/tmp/bftree_disk_bench/lookup_direct_4m/data"
+storage = ["StdDirect"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 4_000_000
+
+[[BfTreeBench]]
+name = "lookup_disk_direct_record_count_8m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = "/tmp/bftree_disk_bench/lookup_direct_8m/data"
+storage = ["StdDirect"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 8_000_000
+
+[[BfTreeBench]]
+name = "lookup_disk_direct_record_count_16m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = "/tmp/bftree_disk_bench/lookup_direct_16m/data"
+storage = ["StdDirect"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 16_000_000
+
+[[BfTreeBench]]
+name = "lookup_disk_direct_record_count_32m"
+threads = [1]
+time = 0
+repeat = 1
+record_cnt = 10_000
+distribution = [{ Zipf = 0.0 }]
+workload_mix = [
+	{ read = 100, negative_read = 0, update = 0, scan = 0, insert = 0 },
+]
+key_len = 8
+scan_cnt = 1
+memory_size_mb = [32]
+file_path = "/tmp/bftree_disk_bench/lookup_direct_32m/data"
+storage = ["StdDirect"]
+read_promotion_rate = [100]
+copy_on_access_ratio = [0.1]
+record_count_mode = true
+value_len = 8
+warmup_cnt = 10_000
+preload_records = 32_000_000
