@@ -1,23 +1,26 @@
 #!/bin/bash
-# Insert Key Size Sweep Benchmark
+# Insert Key Size Sweep Benchmark (StdDirect / O_DIRECT backend)
 # Measures performance across different key sizes: 8, 16, 32, 64, 128 bytes
 # Fixed at 1M records with 8-byte values
+# Uses the StdDirect (O_DIRECT) storage backend, bypassing the OS page cache,
+# so results include real disk I/O and page-read/write counts.
 
 cd "$(dirname "$0")" || exit 1
 
 CSV_FILE="/tmp/benchmark_insert_key_size_sweep.csv"
 
 echo "=========================================="
-echo "INSERT KEY SIZE SWEEP BENCHMARK"
+echo "INSERT KEY SIZE SWEEP BENCHMARK (StdDirect)"
 echo "=========================================="
 echo "Testing: 8, 16, 32, 64, 128-byte keys"
 echo "Records: 1,000,000 per key size"
 echo "Values: 8 bytes"
-echo "Cache: 32MB in-memory"
+echo "Cache: 32MB, Backend: StdDirect (O_DIRECT)"
 echo ""
 
 rm -f "$CSV_FILE"
-cargo build --release 2>&1 | grep -E "Compiling|Finished"
+rm -rf /tmp/bftree_disk_bench
+cargo build --release --features metrics-rt 2>&1 | grep -E "Compiling|Finished"
 
 echo ""
 echo "Starting benchmarks..."

@@ -250,22 +250,21 @@ impl ShumaiBench for TestBench {
 
         // Determine what to log based on benchmark type and extract key size from name
         let is_lookup = self.config.name.contains("lookup");
-        let is_disk = self.config.name.contains("disk");
+        let is_disk = self.config.storage != StorageBackend::Memory;
         let key_size_or_count = x_axis_value(&self.config);
 
-        // Mark as failed based on known issue; lookup benchmarks report average
+        // Mark as failed based on known issue; all benchmarks report average
         // per-op latency in milliseconds instead of total elapsed time.
         let status = if self.config.key_len >= 32 && is_lookup {
             "FAILED".to_string()
-        } else if is_lookup {
+        } else {
             let avg_latency_ms = (elapsed_secs * 1000.0) / op_cnt as f64;
             format!("{:.6}", avg_latency_ms)
-        } else {
-            format!("{:.6}", elapsed_secs)
         };
         let io_counts = if is_disk {
             let total_page_reads = base_page_reads + full_page_reads + mini_page_reads;
             let avg_page_reads = total_page_reads as f64 / op_cnt as f64;
+            let avg_page_writes = io_writes as f64 / op_cnt as f64;
             Some(PageIoCounts {
                 io_reads,
                 io_writes,
@@ -273,6 +272,7 @@ impl ShumaiBench for TestBench {
                 full_page_reads,
                 mini_page_reads,
                 avg_page_reads,
+                avg_page_writes,
             })
         } else {
             None
@@ -400,16 +400,13 @@ fn log_benchmark_result(
         if !file_exists {
             let is_lookup = config_name.contains("lookup");
             let is_record_count = config_name.contains("record_count");
+            let x_label = if is_record_count { "record_count" } else { "key_size_bytes" };
             let header = if io_counts.is_some() {
-                "record_count,avg_latency_ms,avg_page_reads,io_read_cnt,io_write_cnt,base_page_read_cnt,full_page_read_cnt,mini_page_read_cnt"
-            } else if is_lookup && is_record_count {
-                "record_count,avg_latency_ms"
+                format!("{x_label},avg_latency_ms,avg_page_reads,avg_page_writes,io_read_cnt,io_write_cnt,base_page_read_cnt,full_page_read_cnt,mini_page_read_cnt")
             } else if is_lookup {
-                "key_size_bytes,avg_latency_ms"
-            } else if is_record_count {
-                "record_count,elapsed_secs"
+                format!("{x_label},avg_latency_ms")
             } else {
-                "key_size_bytes,elapsed_secs"
+                format!("{x_label},elapsed_secs")
             };
             let _ = writeln!(file, "{}", header);
         }
@@ -417,10 +414,11 @@ fn log_benchmark_result(
             Some(c) => {
                 let _ = writeln!(
                     file,
-                    "{},{},{:.4},{},{},{},{},{}",
+                    "{},{},{:.4},{:.4},{},{},{},{},{}",
                     value,
                     elapsed_secs_or_flag,
                     c.avg_page_reads,
+                    c.avg_page_writes,
                     c.io_reads,
                     c.io_writes,
                     c.base_page_reads,
@@ -435,7 +433,7 @@ fn log_benchmark_result(
     }
 }
 
-// Disk I/O and page-read counters logged for disk-backed lookup benchmarks.
+// Disk I/O and page-read counters logged for disk-backed benchmarks.
 struct PageIoCounts {
     io_reads: usize,
     io_writes: usize,
@@ -443,6 +441,7 @@ struct PageIoCounts {
     full_page_reads: usize,
     mini_page_reads: usize,
     avg_page_reads: f64,
+    avg_page_writes: f64,
 }
 
 // Determine the x-axis value to log for a given benchmark config: lookup

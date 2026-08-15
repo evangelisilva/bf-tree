@@ -197,7 +197,7 @@ impl shumai::BenchResult for MicroBenchResult {
     }
 }
 
-#[derive(Copy, Debug, Clone, Deserialize, Serialize)]
+#[derive(Copy, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub enum StorageBackend {
     Memory,
     Std,
